@@ -58,6 +58,7 @@ Usage:
 Setup options:
   --browser-only               Account-eligible Web models, full context/images, no local tools or tunnel
   --full                       Account-eligible Web models with tools through the configured connector
+  --connector-name NAME        Automatic connector name for this computer (default: Codex Native3)
   --automatic-browser-interaction
                                Send prompts and read ChatGPT state through browser automation (default)
   --zero-risk-browser-interaction
@@ -271,6 +272,8 @@ async function setupCommand(args: string[]): Promise<void> {
     mode: full ? "full" : "browser-only",
     ...(portRaw ? { port: Number(portRaw) } : {}),
   };
+  const connectorName = takeOption(args, "--connector-name");
+  if (connectorName !== undefined) options.connectorName = connectorName;
   const automaticBrowserInteraction = takeFlag(args, "--automatic-browser-interaction");
   const manualBrowserInteraction = takeFlag(args, "--zero-risk-browser-interaction");
   if (automaticBrowserInteraction && manualBrowserInteraction) {
