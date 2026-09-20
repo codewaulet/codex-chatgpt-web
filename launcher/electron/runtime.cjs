@@ -918,12 +918,16 @@ class RuntimeHost {
     if (this.launcherProfile === "development") {
       return connectorNameForDevSetup(current.config?.appName);
     }
-    if (!current.configured || current.mode !== "full") return CURRENT_CONNECTOR_NAME;
+    if (!current.configured || current.mode !== "full") return this.setupConnectorName();
     return connectorNameForSetup(current.config?.appName);
   }
 
   setupConnectorName() {
-    return this.launcherProfile === "development" ? DEV_CONNECTOR_NAME : CURRENT_CONNECTOR_NAME;
+    if (this.launcherProfile === "development") return DEV_CONNECTOR_NAME;
+    const { config } = this.runtimeConfigSnapshot();
+    const configured = config?.automaticAppName
+      ?? (config?.browserInteractionMode !== "manual" ? config?.appName : undefined);
+    return configured ? connectorNameForSetup(configured) : CURRENT_CONNECTOR_NAME;
   }
 
   cancelActiveTurns() {
