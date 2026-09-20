@@ -8,6 +8,7 @@ import {
   defaultBrokerEndpoint,
   defaultConfig,
   getConfigPath,
+  isLegacyChatGptConnectorName,
   loadConfigForSetup,
   resolveInteractionConnectorIdentities,
   saveConfig,
@@ -44,6 +45,7 @@ import { VERSION } from "./version";
 
 export interface SetupOptions {
   mode: RuntimeMode;
+  connectorName?: string;
   browserInteractionMode?: BrowserInteractionMode;
   subagentProtocol?: SubagentProtocol;
   port?: number;
@@ -252,6 +254,11 @@ function baseConfig(
   Object.assign(config, resolveInteractionConnectorIdentities(
     config.browserInteractionMode,
     profile,
+    options.connectorName ?? (profile === "production"
+      && existing?.automaticAppName
+      && !isLegacyChatGptConnectorName(existing.automaticAppName)
+      ? existing.automaticAppName
+      : undefined),
   ));
   if (options.subagentProtocol) config.subagentProtocol = options.subagentProtocol;
   config.releaseVersion = VERSION;
@@ -296,7 +303,7 @@ function baseConfig(
       throw new Error("Zero Risk does not support Bigger Context");
     }
     if (config.mode !== "full") {
-      throw new Error("Zero Risk requires --full so Codex Zero Risk can signal start, tools, and completion");
+      throw new Error("Zero Risk requires --full so Codex Zero Risk3 can signal start, tools, and completion");
     }
     if (config.browserHost !== "launcher") {
       throw new Error("Zero Risk requires the Launcher; pass --browser-host-descriptor from the running Launcher");
