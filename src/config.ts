@@ -19,10 +19,10 @@ export type SubagentProtocol = "compatibility-v1" | "native";
  * ChatGPT caches a connector's public MCP contract by connector identity. The direct turn-token
  * contract therefore has a new identity instead of mutating the retired connector in place.
  */
-export const CHATGPT_CONNECTOR_NAME = "Codex Native2";
+export const CHATGPT_CONNECTOR_NAME = "Codex Native3";
 export const DEV_CHATGPT_CONNECTOR_NAME = `${CHATGPT_CONNECTOR_NAME} DEV`;
-export const ZERO_RISK_CHATGPT_CONNECTOR_NAME = "Codex Zero Risk";
-export const LEGACY_CHATGPT_CONNECTOR_NAMES = ["Codex Native"] as const;
+export const ZERO_RISK_CHATGPT_CONNECTOR_NAME = "Codex Zero Risk3";
+export const LEGACY_CHATGPT_CONNECTOR_NAMES = ["Codex Native", "Codex Native2"] as const;
 
 export function isLegacyChatGptConnectorName(value: string): boolean {
   return (LEGACY_CHATGPT_CONNECTOR_NAMES as readonly string[]).includes(value);
@@ -31,7 +31,7 @@ export function isLegacyChatGptConnectorName(value: string): boolean {
 export function legacyChatGptConnectorMigrationMessage(legacyName: string): string {
   return `Legacy ChatGPT connector ${JSON.stringify(legacyName)} was found, but this release requires`
     + ` a newly created connector named ${JSON.stringify(CHATGPT_CONNECTOR_NAME)}. Create`
-    + ` ${JSON.stringify(CHATGPT_CONNECTOR_NAME)} against the same tunnel with Authentication set to None;`
+    + ` ${JSON.stringify(CHATGPT_CONNECTOR_NAME)} against this computer\'s tunnel with Authentication set to None;`
     + ` do not rename or refresh ${JSON.stringify(legacyName)}.`;
 }
 
@@ -44,8 +44,19 @@ export interface InteractionConnectorIdentities {
 export function resolveInteractionConnectorIdentities(
   interactionMode: BrowserInteractionMode,
   profile: "production" | "development" = "production",
+  configuredAutomaticName?: string,
 ): InteractionConnectorIdentities {
-  const automaticAppName = profile === "development" ? DEV_CHATGPT_CONNECTOR_NAME : CHATGPT_CONNECTOR_NAME;
+  const defaultName = profile === "development" ? DEV_CHATGPT_CONNECTOR_NAME : CHATGPT_CONNECTOR_NAME;
+  const automaticAppName = configuredAutomaticName === undefined ? defaultName : configuredAutomaticName.trim();
+  if (!automaticAppName || automaticAppName.length > 80 || /[\\u0000-\\u001f\\u007f]/u.test(automaticAppName)) {
+    throw new Error("Connector name must contain 1-80 characters without control characters");
+  }
+  if (automaticAppName === ZERO_RISK_CHATGPT_CONNECTOR_NAME || isLegacyChatGptConnectorName(automaticAppName)) {
+    throw new Error("Automatic connector name must differ from the Zero Risk and legacy connectors");
+  }
+  if (profile === "development" && automaticAppName !== DEV_CHATGPT_CONNECTOR_NAME) {
+    throw new Error("DEV setup requires its separate default connector identity");
+  }
   return {
     appName: interactionMode === "manual" ? ZERO_RISK_CHATGPT_CONNECTOR_NAME : automaticAppName,
     automaticAppName,
@@ -360,9 +371,13 @@ export function loadConfigForSetup(): AppConfig {
   const interactionMode = raw.browserInteractionMode ?? "automatic";
   const automaticName = raw.automaticAppName
     ?? (interactionMode === "automatic" ? raw.appName : CHATGPT_CONNECTOR_NAME);
-  if (automaticName === ZERO_RISK_CHATGPT_CONNECTOR_NAME) {
+  if (isLegacyChatGptConnectorName(String(automaticName)) || automaticName === ZERO_RISK_CHATGPT_CONNECTOR_NAME) {
     raw.automaticAppName = CHATGPT_CONNECTOR_NAME;
     if (interactionMode === "automatic") raw.appName = CHATGPT_CONNECTOR_NAME;
+  }
+  if (raw.manualAppName === "Codex Zero Risk") raw.manualAppName = ZERO_RISK_CHATGPT_CONNECTOR_NAME;
+  if (interactionMode === "manual" && raw.appName === "Codex Zero Risk") {
+    raw.appName = ZERO_RISK_CHATGPT_CONNECTOR_NAME;
   }
   return parseConfig(raw, path);
 }
