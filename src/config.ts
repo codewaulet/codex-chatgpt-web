@@ -31,7 +31,7 @@ export function isLegacyChatGptConnectorName(value: string): boolean {
 export function legacyChatGptConnectorMigrationMessage(legacyName: string): string {
   return `Legacy ChatGPT connector ${JSON.stringify(legacyName)} was found, but this release requires`
     + ` a newly created connector named ${JSON.stringify(CHATGPT_CONNECTOR_NAME)}. Create`
-    + ` ${JSON.stringify(CHATGPT_CONNECTOR_NAME)} against this computer\'s tunnel with Authentication set to None;`
+    + ` ${JSON.stringify(CHATGPT_CONNECTOR_NAME)} against this computer's tunnel with Authentication set to None;`
     + ` do not rename or refresh ${JSON.stringify(legacyName)}.`;
 }
 
@@ -48,7 +48,7 @@ export function resolveInteractionConnectorIdentities(
 ): InteractionConnectorIdentities {
   const defaultName = profile === "development" ? DEV_CHATGPT_CONNECTOR_NAME : CHATGPT_CONNECTOR_NAME;
   const automaticAppName = configuredAutomaticName === undefined ? defaultName : configuredAutomaticName.trim();
-  if (!automaticAppName || automaticAppName.length > 80 || /[\\u0000-\\u001f\\u007f]/u.test(automaticAppName)) {
+  if (!automaticAppName || automaticAppName.length > 80 || /[\u0000-\u001f\u007f]/u.test(automaticAppName)) {
     throw new Error("Connector name must contain 1-80 characters without control characters");
   }
   if (automaticAppName === ZERO_RISK_CHATGPT_CONNECTOR_NAME || isLegacyChatGptConnectorName(automaticAppName)) {
