@@ -258,7 +258,7 @@ class BrowserControlServer {
           }
           if (observed.status === "timeout") {
             writeJson(response, 408, {
-              error: "Codex Zero Risk did not start within its allowed time after Sent confirmation",
+              error: "Codex Zero Risk3 did not start within its allowed time after Sent confirmation",
               code: "manual_turn_timed_out",
             });
             return;
